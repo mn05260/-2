@@ -25,15 +25,12 @@ public void handle(HttpExchange exchange) throws IOException {
         
         sendResponse(exchange, "OK");
     }
-    // 3. もし「一覧を表示」のリクエストなら（ここが新しい処理！）
     else if (path.equals("/list") && method.equals("GET")) {
         java.util.List<String> tasks = TaskFIleManager.loadTasks();
         String response = String.join("\n", tasks); // リストを改行区切りの文字列にする
         sendResponse(exchange, response);
     }
 }
-
-// 4. 何度も書くと大変なので、返信用メソッドを外に作っておく
 private void sendResponse(HttpExchange exchange, String response) throws IOException {
     byte[] responseBytes = response.getBytes("utf-8");
     exchange.sendResponseHeaders(200, responseBytes.length);

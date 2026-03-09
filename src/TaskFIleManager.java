@@ -2,7 +2,6 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.*;
 public class TaskFIleManager {
-    //ファイルの中からリストを読み込むようにする
     private static final String FILE_NAME = "kadai.txt";
     public static List<String> loadTasks() throws IOException{
         if (Files.exists(Paths.get(FILE_NAME))){

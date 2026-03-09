@@ -3,80 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <title>ToDoアプリ</title>
+    //アプリの見た目
     <style>
-        /* 背景に色をつけて、真っ白じゃないことを分かりやすくします */
-        body { 
-            font-family: sans-serif; 
-            padding: 40px; 
-            background-color: #e3f2fd; /* 薄い水色 */
-            text-align: center;
-        }
-        .container {
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            display: inline-block;
-            min-width: 300px;
-        }
+        body { font-family: sans-serif; padding: 40px; background-color: #e3f2fd; text-align: center; }
+        .container { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: inline-block; min-width: 300px; }
         #todo-list { list-style: none; padding: 0; text-align: left; }
-        .task-item { padding: 10px; border-bottom: 1px solid #eee; color: #333; }
-        /* イラスト（絵文字）のスタイル */
-        .icon { font-size: 50px; margin-bottom: 10px; }
-        button { cursor: pointer; background: #2196f3; color: white; border: none; padding: 5px 15px; border-radius: 5px; }
+        .task-item { padding: 10px; border-bottom: 1px solid #eee; color: #333; display: flex; justify-content: space-between; }
+        button { cursor: pointer; background: #2196f3; color: white; border: none; padding: 5px 10px; border-radius: 5px; }
+        .del-btn { background: #ff5252; margin-left: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="icon"></div>
         <h1>🖋️大学課題リスト📚</h1>
-        
-        <input type="text" id="taskInput" placeholder="予定をお書きください！">
-        <button onclick="addTask()">追加</button>
-        
+        <div style="display: flex; flex-direction: column; gap: 5px;">
+            <input type="text" id="taskInput" placeholder="課題名を入力">
+            <input type="datetime-local" id="deadlineInput">
+            //追加のボタンを押す
+            <button onclick="addTask()">追加</button>
+        </div>
         <ul id="todo-list"></ul>
     </div>
 
     <script>
-    // 追加ボタンが押された時の処理
-    async function addTask() {
-        const input = document.getElementById('taskInput');
+    // 画面に課題を表示する関数
+    function addTaskToDisplay(taskText) {
         const list = document.getElementById('todo-list');
-        
-        if (input.value === "") return;
-
-        // 1. サーバー(/add)へデータを送信
-        await fetch('http://localhost:8080/add', {
-            method: 'POST',
-            body: input.value
-        });
-
-        // 2. 画面に表示を追加
         const li = document.createElement('li');
         li.className = 'task-item';
-        li.textContent = "✅ " + input.value;
+        // 削除ボタン付きのHTMLを作成
+        //innetHTMLを使いHTMLのタグを直接文字列にする
+        li.innerHTML = `<span>✅ ${taskText}</span> 
+                        <button class="del-btn" onclick="deleteTask(this, '${taskText}')">完了</button>`;
         list.appendChild(li);
-        
-        input.value = '';
     }
 
-    // ページが開かれた時にサーバー(/list)からデータを取得
+    async function addTask() {
+        const input = document.getElementById('taskInput');
+        const deadline = document.getElementById('deadlineInput');
+        if (input.value === "") return;
+
+        let taskData = input.value;
+        if (deadline.value) taskData += ` (締切: ${deadline.value.replace('T', ' ')})`;
+//await fetichで新しい課題をサーバーに届ける
+        await fetch('http://localhost:8080/add', { method: 'POST', body: taskData });
+        
+        addTaskToDisplay(taskData);
+        input.value = ''; deadline.value = '';
+    }
+//サーバーから削除命令を出す
+    async function deleteTask(btn, taskText) {
+        // サーバーに削除を伝える
+        await fetch('http://localhost:8080/delete', { method: 'POST', body: taskText });
+        // 画面から消す
+        btn.parentElement.remove();
+    }
+
     window.onload = async () => {
         const res = await fetch('http://localhost:8080/list');
         const text = await res.text();
         if (!text) return;
-        
-        const tasks = text.split('\n');
-        const list = document.getElementById('todo-list');
-        
-        tasks.forEach(task => {
-            if(task.trim() === "") return; // 空行は無視
-            const li = document.createElement('li');
-            li.className = 'task-item'; // CSSを適用するためにクラス名を追加
-            li.textContent = "✅ " + task;
-            list.appendChild(li);
-        });
+        //アプリを開いたときに過去の課題も一緒に読み込み表示する
+        text.split('\n').forEach(task => { if(task.trim() !== "") addTaskToDisplay(task); });
     };
-</script>
+    </script>
 </body>
 </html>
