@@ -3,69 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <title>ToDoアプリ</title>
-    //アプリの見た目
     <style>
         body { font-family: sans-serif; padding: 40px; background-color: #e3f2fd; text-align: center; }
-        .container { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: inline-block; min-width: 300px; }
+        .container { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: inline-block; min-width: 350px; }
         #todo-list { list-style: none; padding: 0; text-align: left; }
-        .task-item { padding: 10px; border-bottom: 1px solid #eee; color: #333; display: flex; justify-content: space-between; }
-        button { cursor: pointer; background: #2196f3; color: white; border: none; padding: 5px 10px; border-radius: 5px; }
+        .task-item { padding: 10px; border-bottom: 1px solid #eee; color: #333; display: flex; justify-content: space-between; align-items: center; }
+        button { cursor: pointer; background: #2196f3; color: white; border: none; padding: 5px 10px; border-radius: 5px; margin: 2px; }
         .del-btn { background: #ff5252; margin-left: 10px; }
+        #filters { margin-bottom: 15px; border-bottom: 2px solid #e3f2fd; padding-bottom: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🖋️大学課題リスト📚</h1>
-        <div style="display: flex; flex-direction: column; gap: 5px;">
+        
+        <div id="filters"></div>
+
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-bottom: 20px;">
+            <input type="text" id="classInput" placeholder="授業名 (例: 数学I)">
             <input type="text" id="taskInput" placeholder="課題名を入力">
             <input type="datetime-local" id="deadlineInput">
-            //追加のボタンを押す
             <button onclick="addTask()">追加</button>
         </div>
         <ul id="todo-list"></ul>
     </div>
 
     <script>
-    // 画面に課題を表示する関数
-    function addTaskToDisplay(taskText) {
-        const list = document.getElementById('todo-list');
-        const li = document.createElement('li');
-        li.className = 'task-item';
-        // 削除ボタン付きのHTMLを作成
-        //innetHTMLを使いHTMLのタグを直接文字列にする
-        li.innerHTML = `<span>✅ ${taskText}</span> 
-                        <button class="del-btn" onclick="deleteTask(this, '${taskText}')">完了</button>`;
-        list.appendChild(li);
-    }
+        // 1. タスクを画面に表示する関数
+      function addTaskToDisplay(taskText) {
+    const list = document.getElementById('todo-list');
+    const li = document.createElement('li');
+    li.className = 'task-item';
+    
+    const parts = taskText.split("|");
+    const className = parts[0] || "未設定";
+    const taskContent = parts.slice(1).join("|");
+    li.dataset.class = className;
 
-    async function addTask() {
-        const input = document.getElementById('taskInput');
-        const deadline = document.getElementById('deadlineInput');
-        if (input.value === "") return;
+    let remaining = "";
+    const match = taskText.match(/締切: ([^)]+)/);
+    
+    if (match) {
+        const deadline = new Date(match[1]); // 締切
+        const now = new Date();              // 今
 
-        let taskData = input.value;
-        if (deadline.value) taskData += ` (締切: ${deadline.value.replace('T', ' ')})`;
-//await fetichで新しい課題をサーバーに届ける
-        await fetch('http://localhost:8080/add', { method: 'POST', body: taskData });
+        // 【重要】「今日」かどうかを年月日だけで判定
+        const isToday = deadline.getFullYear() === now.getFullYear() &&
+                        deadline.getMonth() === now.getMonth() &&
+                        deadline.getDate() === now.getDate();
         
-        addTaskToDisplay(taskData);
-        input.value = ''; deadline.value = '';
-    }
-//サーバーから削除命令を出す
-    async function deleteTask(btn, taskText) {
-        // サーバーに削除を伝える
-        await fetch('http://localhost:8080/delete', { method: 'POST', body: taskText });
-        // 画面から消す
-        btn.parentElement.remove();
+        li.dataset.isToday = isToday; // ここで true か false を保存
+
+        const diff = deadline - now;
+        if (diff > 0) {
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            if (isToday) {
+                remaining = ` 🚨【今日中！】残り ${hours}時間`;
+                li.style.backgroundColor = "#fff9c4"; // 今日なら黄色
+            } else {
+                const days = Math.floor(hours / 24);
+                remaining = ` ⏳残り ${days}日 ${hours % 24}時間`;
+            }
+        } else {
+            remaining = " ⚠️期限切れ";
+            li.style.color = "red";
+        }
     }
 
-    window.onload = async () => {
+    li.innerHTML = `
+        <span>📘 <strong>${className}</strong> | ${taskContent}${remaining}</span>
+        <button class="del-btn" onclick="deleteTask('${taskText.replace(/'/g, "\\'")}')">完了</button>
+    `;
+    list.appendChild(li);
+}
+
+        // 2. タスクを読み込み、フィルタボタンを更新する関数
+        async function loadTasks() {
+    const list = document.getElementById('todo-list');
+    const filterArea = document.getElementById("filters");
+    list.innerHTML = "";
+    
+    try {
         const res = await fetch('http://localhost:8080/list');
         const text = await res.text();
-        if (!text) return;
-        //アプリを開いたときに過去の課題も一緒に読み込み表示する
-        text.split('\n').forEach(task => { if(task.trim() !== "") addTaskToDisplay(task); });
-    };
+        if (!text.trim()) { filterArea.innerHTML = ""; return; }
+
+        let tasks = text.split('\n').filter(t => t.trim() !== "");
+
+        // ★ 締切が近い順に並び替える(ソート)
+        tasks.sort((a, b) => {
+            const dateA = a.match(/締切: ([^)]+)/) ? new Date(a.match(/締切: ([^)]+)/)[1]) : new Date(9999, 11, 31);
+            const dateB = b.match(/締切: ([^)]+)/) ? new Date(b.match(/締切: ([^)]+)/)[1]) : new Date(9999, 11, 31);
+            return dateA - dateB;
+        });
+
+        const classes = new Set();
+        tasks.forEach(task => {
+            addTaskToDisplay(task);
+            classes.add(task.split("|")[0]);
+        });
+
+        // ★ 「今日」フィルタボタンを追加
+        filterArea.innerHTML = `
+            <button onclick="filterClass('all')">全部</button>
+            <button onclick="filterClass('today')" style="background:#ff9800;">🔥今日締切</button>
+        `;
+        classes.forEach(c => {
+            filterArea.innerHTML += `<button onclick="filterClass('${c}')">${c}</button>`;
+        });
+
+    } catch (e) { console.error("Error:", e); }
+}
+
+// フィルタ関数も「今日」に対応させる
+function filterClass(className) {
+    const tasks = document.querySelectorAll(".task-item");
+    tasks.forEach(task => {
+        if (className === "all") {
+            task.style.display = "flex";
+        } else if (className === "today") {
+            // 文字列の "true" と比較する点に注意！
+            task.style.display = (task.dataset.isToday === "true") ? "flex" : "none";
+        } else {
+            task.style.display = (task.dataset.class === className) ? "flex" : "none";
+        }
+    });
+}
+
+       
+
+        // 4. 追加・削除
+        async function addTask() {
+            const classInput = document.getElementById('classInput');
+            const input = document.getElementById('taskInput');
+            const deadline = document.getElementById('deadlineInput');
+            
+            if (input.value === "" || classInput.value === "") {
+                alert("授業名と課題名を入力してください");
+                return;
+            }
+
+            let taskData = `${classInput.value}|${input.value}`;
+            if (deadline.value) taskData += ` (締切: ${deadline.value.replace('T', ' ')})`;
+
+            await fetch('http://localhost:8080/add', { method: 'POST', body: taskData });
+            
+            input.value = ''; deadline.value = ''; classInput.value = '';
+            loadTasks();
+        }
+
+        async function deleteTask(taskText) {
+            await fetch('http://localhost:8080/delete', { method: 'POST', body: taskText });
+            loadTasks();
+        }
+
+        window.onload = loadTasks;
     </script>
 </body>
 </html>

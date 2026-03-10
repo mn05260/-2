@@ -6,15 +6,10 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-
 public class App {
     public static void main(String[] args) throws IOException {
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
-        
-        // 1. 担当者(Handler)を1つ作る（保存と読み込みを両方やるやつ）
         kadaihozon myHandler = new kadaihozon();
-
-      
         server.createContext("/", new HttpHandler() {
             @Override
             public void handle(HttpExchange exchange) throws IOException {
@@ -25,13 +20,10 @@ public class App {
                 }
             }
         });
-
-       
         server.createContext("/add", myHandler);  
-        server.createContext("/list", myHandler); 
-
-        
-        System.out.println("サーバーが起動したよ！ http://localhost:8080 にアクセスしてね");
+        server.createContext("/list", myHandler);
+server.createContext("/delete", myHandler);
+        System.out.println("サーバーが起動完了！ http://localhost:8080 ");
         server.start();
     }
 }

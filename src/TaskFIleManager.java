@@ -3,14 +3,17 @@ import java.nio.file.*;
 import java.util.*;
 public class TaskFIleManager {
     private static final String FILE_NAME = "kadai.txt";
-    public static List<String> loadTasks() throws IOException{
-        if (Files.exists(Paths.get(FILE_NAME))){
-            return Files.readAllLines(Paths.get(FILE_NAME));
+    public static List<String> loadTasks() throws IOException {
+        Path path = Paths.get(FILE_NAME);
+        if (Files.exists(path)) {
+            return Files.readAllLines(path);
         }
         return new ArrayList<>();
     }
-    public static void saveTasks(List<String> tasks) throws IOException{
-        Files.write(Paths.get(FILE_NAME), tasks);
+    public static void saveTasks(List<String> tasks) throws IOException {
+        //課題に変更があった場合、上書きするようにする
+        Files.write(Paths.get(FILE_NAME), tasks,
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING);
     }
-    }
-
+}
