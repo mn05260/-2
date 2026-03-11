@@ -1,4 +1,4 @@
-import com.sun.net.httpserver.HttpExchange;
+ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -61,7 +61,3 @@ public class kadaihozon implements HttpHandler {
         }
     }
 }
-
-    
-
-
