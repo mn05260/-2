@@ -1,18 +1,46 @@
-## Getting Started
+# 大学の課題管理アプリ 📚
 
-Welcome to the VS Code Java world. Here is a guideline to help you get started to write Java code in Visual Studio Code.
+## 概要
+このアプリは日々の課題を簡単に記録・管理するためのツールです。事前に時間割を設定することで、ホーム画面に科目が表示され、ボタンを押して日時を入れるだけで課題の管理が可能です。
 
-## Folder Structure
+## こだわったポイント
+* **効率的なコード実装**: リスト操作に Lambda式 や Stream API を活用し、簡潔で可読性の高いコードに仕上げました。
+* **独自のソートロジック**: 課題文字列から「締切日」を抽出し、日付順に自動整列させるロジックを自作しました。
+* **安泰下リソース管理**: `try-with-resources` を採用し、通信処理終了後にリソースを自動解放する安全な設計にしました。
+* **視覚的なアラート機能**: JavaScriptで締切までの残り時間をリアルタイム演算し、期限に応じてタスクの色を自動変更します。
+* **進捗の可視化**: 完了タスクをブラウザ側で保持し、プログレスバーで達成感を視覚化しました。
+* **リアルタイム更新**: Fetch API による非同期通信により、リロードなしで課題の追加・処理を即座に反映します。
 
-The workspace contains two folders by default, where:
+## 使用技術
+### Back-end
+* Java 17
+* Java Stream API
+* Java I/O
 
-- `src`: the folder to maintain sources
-- `lib`: the folder to maintain dependencies
+### Front-end
+* JavaScript
+* Web Storage
+* HTML5
 
-Meanwhile, the compiled output files will be generated in the `bin` folder by default.
+### Build & Tools
+* Visual Studio Code
 
-> If you want to customize the folder structure, open `.vscode/settings.json` and update the related settings there.
+## 機能一覧
+* **課題の追加・削除**: 授業名、課題内容、締め切り日を登録できます。
+* **自動ソート**: サーバー側で解析を行い、締め切りが近い順に自動整列します。
+* **進捗管理**: 完了課題数に応じたプログレスバー表示。
+* **締め切りアラート**: 残り時間（当日・1日前・余裕あり）を自動計算し、枠線を色分けします。
+* **時間割連動**: 時間割を設定し、ホーム画面にワンタップ入力ボタンを自動生成します。
+* **フィルタリング**: 授業別や「当日締め切り」での絞り込みが可能です。
 
-## Dependency Management
+## 開発の経緯
+大学生活において、複数の授業から出される課題の締め切り管理に苦労していました。既存アプリでは入力が面倒で後回しにしてしまうことが多々あったため、「視覚的に分かりやすく、入力の手間を極限まで省いたアプリ」が必要だと考え開発しました。
 
-The `JAVA PROJECTS` view allows you to manage your dependencies. More details can be found [here](https://github.com/microsoft/vscode-java-dependency#manage-dependencies).
+## 苦労した点と解決策
+* **締切順の並び替え**: 文字列から日付データを抽出・比較するロジックに苦労しました。Stream APIとLambdaを活用し、データ追加時にサーバー側で動的に並び替える仕組みを構築しました。
+* **UIの整理**: 課題が増えると画面が煩雑になるため、授業ごとのボタン生成や「当日ボタン」によるフィルタ機能をJavaScriptで実装し、必要な情報へ即座にアクセスできるようにしました。
+
+## 実行方法
+1. VSCodeでプロジェクトを開きます。
+2. `src/controller/App.java` を実行します。
+3. ターミナルに「サーバーが起動完了！」と表示されたら、ブラウザで `http://localhost:8080` を開きます。

@@ -1,3 +1,4 @@
+ package model;
  import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import java.io.IOException;
@@ -11,9 +12,13 @@ public class kadaihozon implements HttpHandler {
     public void handle(HttpExchange exchange) throws IOException {
         String path = exchange.getRequestURI().getPath();
         String method = exchange.getRequestMethod();
+       //ブラウザから送られたURLとメソッドの処理を切り分ける
+       //GETでデータを取得（一覧表示）、POSTでデータを追加
         if (path.equals("/add") && method.equals("POST")) {
             String body;
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), "utf-8"))) {
+                //追加する課題の内容を受け取る
+                //reader.lines()でデータを一行ずつ集めて、最後に一つにまとめる
                 body = reader.lines().collect(Collectors.joining());
             }
 
@@ -36,9 +41,10 @@ public class kadaihozon implements HttpHandler {
             sendResponse(exchange, "DELETED");
         }
        else if (path.equals("/list") && method.equals("GET")) {
-    List<String> tasks = TaskFIleManager.loadTasks();
+   //処理する直前にファイルを読み込んで、処理が終わった瞬間にファイルに保存する
+        List<String> tasks = TaskFIleManager.loadTasks();
 
-    // 締切で並び替え
+    // 「締め切り」という文字列の場所を慶安して日付順に並び変える
     tasks.sort((a, b) -> {
         try {
             String dateA = a.substring(a.indexOf("締切: ") + 4, a.length() - 1);

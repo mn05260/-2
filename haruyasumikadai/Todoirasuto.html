@@ -23,8 +23,6 @@ body { font-family: sans-serif; padding: 20px 10px; background-color: #e3f2fd; t
 #progress-wrapper { margin-bottom: 20px; }
 #progress-container { width: 100%; background: #e0e0e0; border-radius: 10px; height: 20px; overflow: hidden; margin: 5px 0; }
 #progress-bar { height: 100%; width: 0%; background: #4caf50; transition: width 0.5s ease; }
-
-/* ★変更：伝説（色見本）をスマホで折り返し可能に */
 .legend { display: flex; justify-content: center; gap: 5px; margin-bottom: 15px; font-size: 10px; flex-wrap: wrap; }
 .legend-item { padding: 3px 6px; border-radius: 4px; border: 1px solid #ddd; }
 
@@ -56,6 +54,14 @@ button { cursor: pointer; background: #2196f3; color: white; border: none; paddi
 
 /* ★追加：入力フォームをスマホで押しやすく */
 input { padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; width: 100%; box-sizing: border-box; }
+@media (min-width: 600px) {
+        body { font-size: 16px; }
+        .container { max-width: 600px; padding: 30px; }
+        h1 { font-size: 24px; }
+        .task-item { font-size: 16px; padding: 15px; }
+        .timetable th, .timetable td { height: 60px; font-size: 14px; }
+        input, button { font-size: 16px !important; }
+    }
 </style>
 </head>
 <body>
@@ -112,7 +118,7 @@ input { padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 16
 </div>
 
 <script>
-/* JavaScript の部分はロジックに変更がないため、そのまま継続して使用できます */
+
 // --- 時間割システム ---
 function getTimetableData() {
     return JSON.parse(localStorage.getItem('timetableData') || '{}');
@@ -182,6 +188,7 @@ function showScreen(screenId) {
 function updateProgress(currentTasks) {
     const completed = parseInt(localStorage.getItem('completedTasks') || '0');
     const total = currentTasks.length + completed;
+   //完了した課題の数をブラウザでカウントして、棒グラフを動かす。
     const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
     document.getElementById('progress-bar').style.width = percent + "%";
     document.getElementById('progress-text').innerText = percent;
@@ -236,6 +243,7 @@ function addTaskToDisplay(taskText) {
         const now = new Date();
         const diff = deadline - now;
         const oneDay = 24 * 60 * 60 * 1000;
+        //JavaScriptが現在時刻と締め切りを計算して期限が近いものは赤色、余裕があるものは緑色にする
         if (diff < 0) { li.style.borderLeftColor = "#f44336"; remainingText = " ⚠️期限切れ"; }
         else if (diff <= oneDay) { li.style.borderLeftColor = "#f44336"; remainingText = ` 🚨残り僅か`; }
         else { li.style.borderLeftColor = "#4caf50"; remainingText = ` ⏳余裕あり`; }
@@ -253,6 +261,7 @@ async function deleteTask(taskText) {
     loadTasks();
 }
 
+//課題追加の処理や時間割のフィルタリングをjavaに送る
 async function addTask() {
     const classInput = document.getElementById('classInput');
     const input = document.getElementById('taskInput');

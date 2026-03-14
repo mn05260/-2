@@ -1,3 +1,5 @@
+ package controller;
+ import model.kadaihozon;
  import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpExchange;
@@ -9,17 +11,22 @@ import java.nio.file.Paths;
 public class App {
     public static void main(String[] args) throws IOException {
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
+        //データの保存と削除を行うkadaihozonクラスのインスタンスの作成
         kadaihozon myHandler = new kadaihozon();
+        //その場で使い捨ての匿名クラスを作る
         server.createContext("/", new HttpHandler() {
             @Override
             public void handle(HttpExchange exchange) throws IOException {
+                //HTMLファイルを読み込んでブラウザに届ける
                 byte[] response = Files.readAllBytes(Paths.get("haruyasumikadai/Todoirasuto.html"));
                 exchange.sendResponseHeaders(200, response.length);
+                //try-with-responseと書いて、処理が終わると自動的に閉じるようにする
                 try (OutputStream os = exchange.getResponseBody()) {
                     os.write(response);
                 }
             }
         });
+        //add,/deleteはmyHandlerに丸投げするようにする
         server.createContext("/add", myHandler);  
         server.createContext("/list", myHandler);
 server.createContext("/delete", myHandler);
